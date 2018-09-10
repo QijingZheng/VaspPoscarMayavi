@@ -324,9 +324,10 @@ from ase.io import read
 
 import time
 
-
-def View(inf='POSCAR', repeat=(1,1,1),
+def ViewPoscar(inf, repeat=(1,1,1),
          figname='kaka.png', figsize=(800, 800),
+         bgcolor=(0,0,0),
+         quiet=False,
         ):
     '''
     Using the mayavi to view the molecular structure.
@@ -334,7 +335,7 @@ def View(inf='POSCAR', repeat=(1,1,1),
     # all_times = []
 
     # read the POSCAR
-    poscar              = read('POSCAR', format='vasp')
+    poscar              = read(inf, format='vasp')
     # makeing supercells
     # poscar = poscar * (2, 2, 1)
     nions               = poscar.get_number_of_atoms()
@@ -351,7 +352,7 @@ def View(inf='POSCAR', repeat=(1,1,1),
     atom_type_num       = [len(atom_intID_type[k]) for k in atom_intID_type]
 
     # initialize the figure
-    mlab.figure(1, bgcolor=(0, 0, 0), size=(800, 800))
+    mlab.figure(1, bgcolor=bgcolor, size=figsize)
     mlab.clf()
 
     # all_times.append(time.time())
@@ -413,7 +414,7 @@ def View(inf='POSCAR', repeat=(1,1,1),
                 bond_max_of_each_type.append(pt_max_bond[AB])
 
     ############################################################
-    # second, plot the bond for each possible bonds
+    # second, connect each possible bond
     ############################################################
 
     # Again, iterate over the bonds is a lot slower than iterate over the types of
@@ -474,8 +475,10 @@ def View(inf='POSCAR', repeat=(1,1,1),
     # print(np.diff(all_times))
 
     mlab.orientation_axes()
-    # mlab.savefig(figname, size=figsize)
-    mlab.show()
+    if quiet:
+        mlab.savefig(figname)
+    else:
+        mlab.show()
 
 def main(cml):
     import argparse
@@ -489,14 +492,22 @@ def main(cml):
                    type=int, default=(1,1,1),
                    help="Makding a supercell.")
     arg.add_argument('-o', action='store', dest='outImg', 
-                   type=str, default='kaka.png',
+                   type=str, default='kaka.jpeg',
                    help="Output image name.")
     arg.add_argument('-s', action='store', dest='outImgSize', nargs=2,
                    type=int, default=(800, 800),
                    help="Output image size.")
+    arg.add_argument('-bg', action='store', dest='bgcolor', nargs=3,
+                   type=float, default=(0,0,0),
+                   help="Background Color.")
+    arg.add_argument('-q', '-quiet', action='store_true', dest='quiet',
+                      default=False,
+                      help='Not show mayavi UI.')
     p = arg.parse_args(cml)
 
-    View(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize)
+    ViewPoscar(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize,
+               bgcolor=tuple(p.bgcolor),
+               quiet=p.quiet)
 
 if __name__ == '__main__':
     import sys
