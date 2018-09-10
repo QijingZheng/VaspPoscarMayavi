@@ -1,4 +1,4 @@
-# mview
+# Mview
 
 Mview is a 3D visulization script written in python to view the molecular
 structures contained in files like VASP POSCAR. The script utilizes
