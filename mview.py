@@ -324,127 +324,180 @@ from ase.io import read
 
 import time
 
-all_times = []
 
-# read the POSCAR
-poscar              = read('POSCAR', format='vasp')
-poscar = poscar * (2, 2, 1)
-nions               = poscar.get_number_of_atoms()
-atom_chem_symb      = np.array(poscar.get_chemical_symbols())
-uniq_atom_chem_symb = list(set(atom_chem_symb))
-ntype               = len(uniq_atom_chem_symb)
-atom_index          = np.arange(nions, dtype=int)
-# index of atoms for each type of elements
-atom_intID_type     = dict([
-    (uniq_atom_chem_symb[itype], atom_index[atom_chem_symb == uniq_atom_chem_symb[itype]])
-    for itype in range(ntype)
-])
-# number of atoms for each type of elements
-atom_type_num       = [len(atom_intID_type[k]) for k in atom_intID_type]
+def View(inf='POSCAR', repeat=(1,1,1),
+         figname='kaka.png', figsize=(800, 800),
+        ):
+    '''
+    Using the mayavi to view the molecular structure.
+    '''
+    # all_times = []
 
-# initialize the figure
-mlab.figure(1, bgcolor=(0, 0, 0), size=(800, 800))
-mlab.clf()
+    # read the POSCAR
+    poscar              = read('POSCAR', format='vasp')
+    # makeing supercells
+    # poscar = poscar * (2, 2, 1)
+    nions               = poscar.get_number_of_atoms()
+    atom_chem_symb      = np.array(poscar.get_chemical_symbols())
+    uniq_atom_chem_symb = list(set(atom_chem_symb))
+    ntype               = len(uniq_atom_chem_symb)
+    atom_index          = np.arange(nions, dtype=int)
+    # index of atoms for each type of elements
+    atom_intID_type     = dict([
+        (uniq_atom_chem_symb[itype], atom_index[atom_chem_symb == uniq_atom_chem_symb[itype]])
+        for itype in range(ntype)
+    ])
+    # number of atoms for each type of elements
+    atom_type_num       = [len(atom_intID_type[k]) for k in atom_intID_type]
 
-all_times.append(time.time())
+    # initialize the figure
+    mlab.figure(1, bgcolor=(0, 0, 0), size=(800, 800))
+    mlab.clf()
 
-# plot the atoms for each type
-for itype in range(ntype):
-    # element name for this type
-    typeName = uniq_atom_chem_symb[itype]
-    # index for this type
-    typeID   = atom_intID_type[typeName]
-    # number of elements for this type
-    typeNo   = atom_type_num[itype]
-    # the coordinates for this type
-    typePos  = poscar.positions[typeID]
-    # the atom color for this type
-    typeClr  = pt_atomic_color[pt_atomic_name.index(typeName)]
-    # the atom radius for this type
-    typeRad  = pt_atomic_radius[pt_atomic_name.index(typeName)]
+    # all_times.append(time.time())
 
-    # for each type of atoms
-    mlab.points3d(typePos[:,0], typePos[:,1], typePos[:,2],
-                  np.ones(typeNo) * typeRad,
-                  color=typeClr, resolution=60,
-                  scale_factor=1.0)
+    # plot the atoms for each type
+    for itype in range(ntype):
+        # element name for this type
+        typeName = uniq_atom_chem_symb[itype]
+        # index for this type
+        typeID   = atom_intID_type[typeName]
+        # number of elements for this type
+        typeNo   = atom_type_num[itype]
+        # the coordinates for this type
+        typePos  = poscar.positions[typeID]
+        # the atom color for this type
+        typeClr  = pt_atomic_color[pt_atomic_name.index(typeName)]
+        # the atom radius for this type
+        typeRad  = pt_atomic_radius[pt_atomic_name.index(typeName)]
 
-all_times.append(time.time())
-############################################################
-# plot the bonds
-############################################################
-# first, find out the possible comibnations 
-type_of_bonds         = []
-bond_max_of_each_type = []
+        # for each type of atoms
+        mlab.points3d(typePos[:,0], typePos[:,1], typePos[:,2],
+                      np.ones(typeNo) * typeRad,
+                      color=typeClr, resolution=60,
+                      scale_factor=1.0)
 
-for ii in range(ntype):
-    for jj in range(ii):
-        A = uniq_atom_chem_symb[ii]
-        B = uniq_atom_chem_symb[jj]
+    # Another way to plot the atoms is to iterate over the number of atoms, which is
+    # a lot slower than iterate over the number of types.
+    # for ii in range(nions):
+    #     atom = mlab.points3d([px[ii]], [py[ii]], [pz[ii]],
+    #                          [atomsSize[ii]],
+    #                          color=tuple(atomsColor[ii]),
+    #                          resolution=60,
+    #                          scale_factor=1.0)
 
-        # check if A and B can form a bond
-        if (A, B) in pt_max_bond:
-            AB = (A, B)
-        elif (B, A) in pt_max_bond:
-            AB = (B, A)
+    # all_times.append(time.time())
+
+    ############################################################
+    # plot the bonds
+    ############################################################
+    # first, find out the possible comibnations 
+    type_of_bonds         = []
+    bond_max_of_each_type = []
+
+    for ii in range(ntype):
+        for jj in range(ii):
+            A = uniq_atom_chem_symb[ii]
+            B = uniq_atom_chem_symb[jj]
+
+            # check if A and B can form a bond
+            if (A, B) in pt_max_bond:
+                AB = (A, B)
+            elif (B, A) in pt_max_bond:
+                AB = (B, A)
+            else:
+                AB = None
+
+            if AB is not None:
+                type_of_bonds.append((A, B))
+                bond_max_of_each_type.append(pt_max_bond[AB])
+
+    ############################################################
+    # second, plot the bond for each possible bonds
+    ############################################################
+
+    # Again, iterate over the bonds is a lot slower than iterate over the types of
+    # bonds.
+    n_type_bonds = len(type_of_bonds)
+    for itype in range(n_type_bonds):
+        A, B  = type_of_bonds[itype]
+        L     = bond_max_of_each_type[itype]
+
+        A_ID  = uniq_atom_chem_symb.index(A)
+        B_ID  = uniq_atom_chem_symb.index(B)
+
+        A_atom_IDs = atom_intID_type[A]
+        B_atom_IDs = atom_intID_type[B]
+
+        # find out all the possible bonds: A-B
+        ijs = []
+        if A == B:
+            A_atom_Num = atom_type_num[A_ID]
+            for ii in range(A_atom_Num):
+                for jj in range(ii):
+                    if poscar.get_distance(A_atom_IDs[ii], B_atom_IDs[jj]) < L:
+                        ijs.append((A_atom_IDs[ii], B_atom_Num[jj]))
         else:
-            AB = None
+            for ii in A_atom_IDs:
+                for jj in B_atom_IDs:
+                    if poscar.get_distance(ii, jj) < L:
+                        ijs.append((ii, jj))
+        ijs = np.array(ijs, dtype=int)
 
-        if AB is not None:
-            type_of_bonds.append((A, B))
-            bond_max_of_each_type.append(pt_max_bond[AB])
+        A_color = pt_atomic_color[pt_atomic_name.index(A)]
+        B_color = pt_atomic_color[pt_atomic_name.index(B)]
 
-# second, plot the bond for each possible bonds
-n_type_bonds = len(type_of_bonds)
-for itype in range(n_type_bonds):
-    A, B  = type_of_bonds[itype]
-    L     = bond_max_of_each_type[itype]
+        p_A = poscar.positions[ijs[:,0]]
+        p_B = poscar.positions[ijs[:,1]]
+        # The coordinate of the middle point in the bond A-B
+        p_M = (p_A + p_B) / 2.
+        p_T = np.zeros((ijs.shape[0] * 2, 3))
+        p_T[1::2,:] = p_M
+        # only connect the bonds
+        bond_connectivity = np.vstack(
+            [range(0,2*ijs.shape[0],2),
+             range(1,2*ijs.shape[0],2)]
+        ).T
 
-    A_ID  = uniq_atom_chem_symb.index(A)
-    B_ID  = uniq_atom_chem_symb.index(B)
+        # plot the first half of the bond: A-M
+        p_T[0::2,:] = p_A
+        bond_A = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
+                    tube_radius=0.1, color=A_color)
+        bond_A.mlab_source.dataset.lines = bond_connectivity
+        # plot the second half of the bond: M-B
+        p_T[0::2,:] = p_B
+        bond_B = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
+                    tube_radius=0.1, color=B_color)
+        bond_B.mlab_source.dataset.lines = bond_connectivity
 
-    A_atom_IDs = atom_intID_type[A]
-    B_atom_IDs = atom_intID_type[B]
+    # all_times.append(time.time())
+    # print(np.diff(all_times))
 
-    ijs = []
-    if A == B:
-        A_atom_Num = atom_type_num[A_ID]
-        for ii in range(A_atom_Num):
-            for jj in range(ii):
-                if poscar.get_distance(A_atom_IDs[ii], B_atom_IDs[jj]) < L:
-                    ijs.append((A_atom_IDs[ii], B_atom_Num[jj]))
-    else:
-        for ii in A_atom_IDs:
-            for jj in B_atom_IDs:
-                if poscar.get_distance(ii, jj) < L:
-                    ijs.append((ii, jj))
-    ijs = np.array(ijs, dtype=int)
+    mlab.orientation_axes()
+    # mlab.savefig(figname, size=figsize)
+    mlab.show()
 
-    A_color = pt_atomic_color[pt_atomic_name.index(A)]
-    B_color = pt_atomic_color[pt_atomic_name.index(B)]
+def main(cml):
+    import argparse
 
-    p_A = poscar.positions[ijs[:,0]]
-    p_B = poscar.positions[ijs[:,1]]
-    p_M = (p_A + p_B) / 2.
-    p_T = np.zeros((ijs.shape[0] * 2, 3))
-    p_T[1::2,:] = p_M
-    bond_connectivity = np.vstack(
-        [range(0,2*ijs.shape[0],2),
-         range(1,2*ijs.shape[0],2)]
-    ).T
+    arg = argparse.ArgumentParser()
 
-    # 
-    p_T[0::2,:] = p_A
-    bond_A = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                tube_radius=0.1, color=A_color)
-    bond_A.mlab_source.dataset.lines = bond_connectivity
-    p_T[0::2,:] = p_B
-    bond_B = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                tube_radius=0.1, color=B_color)
-    bond_B.mlab_source.dataset.lines = bond_connectivity
+    arg.add_argument('-i', action='store', dest='inf',  type=str,
+                   default="POSCAR",
+                   help="File containing the molecular structure.")
+    arg.add_argument('-r', action='store', dest='repeat', nargs=3,
+                   type=int, default=(1,1,1),
+                   help="Makding a supercell.")
+    arg.add_argument('-o', action='store', dest='outImg', 
+                   type=str, default='kaka.png',
+                   help="Output image name.")
+    arg.add_argument('-s', action='store', dest='outImgSize', nargs=2,
+                   type=int, default=(800, 800),
+                   help="Output image size.")
+    p = arg.parse_args(cml)
 
-all_times.append(time.time())
+    View(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize)
 
-print(np.diff(all_times))
-mlab.orientation_axes()
-mlab.show()
+if __name__ == '__main__':
+    import sys
+    main(sys.argv[1:])
