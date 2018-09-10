@@ -327,7 +327,11 @@ import time
 def ViewPoscar(inf, repeat=(1,1,1),
          figname='kaka.png', figsize=(800, 800),
          bgcolor=(0,0,0),
+         # showBox=True,
+         arrow_color=(1,1,1),
          quiet=False,
+         theta=90, phi=0,
+         vibration=None,
         ):
     '''
     Using the mayavi to view the molecular structure.
@@ -336,8 +340,17 @@ def ViewPoscar(inf, repeat=(1,1,1),
 
     # read the POSCAR
     poscar              = read(inf, format='vasp')
-    # makeing supercells
-    # poscar = poscar * (2, 2, 1)
+
+    # set the vibrational vector to the velocity array so that the vibrational
+    # vector will also be repeated when making supercells
+    if vibration is not None:
+        sqrt_mass_norm_vib = vibration / \
+                             np.sqrt(poscar.get_masses())[:,np.newaxis]
+        sqrt_mass_norm_vib /= np.linalg.norm(sqrt_mass_norm_vib)
+        poscar.set_velocities(sqrt_mass_norm_vib)
+    # making supercells
+    poscar = poscar * repeat
+
     nions               = poscar.get_number_of_atoms()
     atom_chem_symb      = np.array(poscar.get_chemical_symbols())
     uniq_atom_chem_symb = list(set(atom_chem_symb))
@@ -357,7 +370,9 @@ def ViewPoscar(inf, repeat=(1,1,1),
 
     # all_times.append(time.time())
 
+    ############################################################
     # plot the atoms for each type
+    ############################################################
     for itype in range(ntype):
         # element name for this type
         typeName = uniq_atom_chem_symb[itype]
@@ -471,17 +486,76 @@ def ViewPoscar(inf, repeat=(1,1,1),
                     tube_radius=0.1, color=B_color)
         bond_B.mlab_source.dataset.lines = bond_connectivity
 
+    ############################################################
+    # Show the vibration mode by arrows
+    ############################################################
+    if vibration is not None:
+        p, v = poscar.get_positions(), poscar.get_velocities()
+        arrow = mlab.quiver3d(
+                    p[:,0], p[:,1], p[:,2],
+                    v[:,0], v[:,1], v[:,2],
+                    color=arrow_color,
+                    mode='arrow',
+                    # scale_factor=1.0,
+                )
+        arrow.glyph.glyph_source.glyph_position = 'tail'
+        # arrow.glyph.glyph_source.glyph_source = arrow.glyph.glyph_source.glyph_dict['arrow_source']  
+
     # all_times.append(time.time())
     # print(np.diff(all_times))
 
     mlab.orientation_axes()
-    if quiet:
-        mlab.savefig(figname)
-    else:
+    mlab.view(azimuth=phi, elevation=theta)
+    mlab.savefig(figname)
+    if not quiet:
         mlab.show()
 
+def load_vibmodes_from_outcar(inf='OUTCAR', include_imag=True):
+    '''
+    Read vibration eigenvectors and eigenvalues from OUTCAR.
+    '''
+
+    out = [line for line in open(inf) if line.strip()]
+    ln  = len(out)
+    for line in out:
+        if "NIONS =" in line:
+            nions = int(line.split()[-1])
+            break
+
+    THz_index = []
+    found_vib_mode = False
+    for ii in range(ln-1,0,-1):
+        if '2PiTHz' in out[ii]:
+            THz_index.append(ii)
+        if 'Eigenvectors and eigenvalues' in out[ii]:
+            i_index = ii + 2
+            found_vib_mode = True
+            break
+    if not found_vib_mode:
+        raise IOError("Can not find vibration normal mode in {}.".format(inf))
+
+    j_index = THz_index[0] + nions + 2
+
+    real_freq = [False if 'f/i' in line else True
+                 for line in out[i_index:j_index] 
+                 if '2PiTHz' in line]
+
+    omegas = [line.split()[ -4] for line in out[i_index:j_index]
+              if '2PiTHz' in line]
+    modes  = [line.split()[3:6] for line in out[i_index:j_index]
+              if ('dx' not in line) and ('2PiTHz' not in line)]
+
+    omegas = np.array(omegas, dtype=float)
+    modes  = np.array(modes, dtype=float).reshape((-1, nions, 3))
+
+    if include_imag:
+        omegas = omegas[real_freq]
+        modes  = modes[real_freq]
+
+    return omegas, modes
+
 def main(cml):
-    import argparse
+    import argparse, os
 
     arg = argparse.ArgumentParser()
 
@@ -503,10 +577,39 @@ def main(cml):
     arg.add_argument('-q', '-quiet', action='store_true', dest='quiet',
                       default=False,
                       help='Not show mayavi UI.')
+
+    arg.add_argument('-outcar', action='store', dest='outcar',  type=str,
+                   default="OUTCAR",
+                   help="OUTCAR files that contains the vibrational normal mode.")
+    arg.add_argument('-n', action='store', dest='nvib',  type=int,
+                   default=0,
+                   help="Show which normal mode.")
+    arg.add_argument('-vcolor', action='store', dest='vcolor', nargs=3,
+                   type=float, default=(1,1,1),
+                   help="Vibrational arrow color.")
+    arg.add_argument('-phi', action='store', dest='phi', 
+                   type=float, default=0,
+                   help="Azimuth view angle.")
+    arg.add_argument('-theta', action='store', dest='theta', 
+                   type=float, default=90,
+                   help="Elevation view angle.")
     p = arg.parse_args(cml)
+
+    if p.nvib > 0:
+        if os.path.isfile('modes.npy'):
+            vmode = np.load('modes.npy')[p.nvib - 1]
+        else:
+            omega, modes = load_vibmodes_from_outcar(p.outcar)
+            np.save('modes.npy', modes)
+            vmode = modes[p.nvib - 1]
+    else:
+        vmode = None
 
     ViewPoscar(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize,
                bgcolor=tuple(p.bgcolor),
+               vibration=vmode,
+               arrow_color=tuple(p.vcolor),
+               phi=p.phi, theta=p.theta,
                quiet=p.quiet)
 
 if __name__ == '__main__':
