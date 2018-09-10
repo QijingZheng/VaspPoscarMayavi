@@ -40,4 +40,4 @@ mview -i POSCAR -r 2 2 1 -bg 0 0 0 -o out.png -n 2 -phi 0 -theta 90 -q
 
 The resulting image looks like this:
 
-![mview_example](examples/out.png)
+![mview_example](example/out.png)
