@@ -28,7 +28,8 @@ The following line shows the possible usage of the script:
 3. set the background color to black by `-bg 0 0 0`, where `0 0 0` is the RGB
    triplet, each with value in [0,255]
 4. save the figure `-o out.png`. The output image format is determined by the
-   suffix of the output file name.
+   suffix of the output file name. use `-s width height` to change the size of
+   the output image.
 5. show the second vibration mode with arrows `-n 2`. The OUTCAR containing the
    normal mode should be designated by `-outcar /path/to/OUTCAR`.
 6. set the azimuth and elevation view angle by `-phi` and `-theta`.
