@@ -357,12 +357,12 @@ def ViewPoscar(inf, repeat=(1,1,1),
     ntype               = len(uniq_atom_chem_symb)
     atom_index          = np.arange(nions, dtype=int)
     # index of atoms for each type of elements
-    atom_intID_type     = dict([
+    atom_type_integerID     = dict([
         (uniq_atom_chem_symb[itype], atom_index[atom_chem_symb == uniq_atom_chem_symb[itype]])
         for itype in range(ntype)
     ])
     # number of atoms for each type of elements
-    atom_type_num       = [len(atom_intID_type[k]) for k in atom_intID_type]
+    atom_type_num       = [len(atom_type_integerID[k]) for k in uniq_atom_chem_symb]
 
     # initialize the figure
     mlab.figure(1, bgcolor=bgcolor, size=figsize)
@@ -377,7 +377,7 @@ def ViewPoscar(inf, repeat=(1,1,1),
         # element name for this type
         typeName = uniq_atom_chem_symb[itype]
         # index for this type
-        typeID   = atom_intID_type[typeName]
+        typeID   = atom_type_integerID[typeName]
         # number of elements for this type
         typeNo   = atom_type_num[itype]
         # the coordinates for this type
@@ -442,8 +442,8 @@ def ViewPoscar(inf, repeat=(1,1,1),
         A_ID  = uniq_atom_chem_symb.index(A)
         B_ID  = uniq_atom_chem_symb.index(B)
 
-        A_atom_IDs = atom_intID_type[A]
-        B_atom_IDs = atom_intID_type[B]
+        A_atom_IDs = atom_type_integerID[A]
+        B_atom_IDs = atom_type_integerID[B]
 
         # find out all the possible bonds: A-B
         ijs = []
