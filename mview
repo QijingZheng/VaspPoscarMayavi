@@ -572,7 +572,7 @@ def main(cml):
                    type=int, default=(800, 800),
                    help="Output image size.")
     arg.add_argument('-bg', action='store', dest='bgcolor', nargs=3,
-                   type=float, default=(0,0,0),
+                   type=int, default=(0,0,0),
                    help="Background Color.")
     arg.add_argument('-q', '-quiet', action='store_true', dest='quiet',
                       default=False,
@@ -585,7 +585,7 @@ def main(cml):
                    default=0,
                    help="Show which normal mode.")
     arg.add_argument('-vcolor', action='store', dest='vcolor', nargs=3,
-                   type=float, default=(1,1,1),
+                   type=int, default=(255, 255, 255),
                    help="Vibrational arrow color.")
     arg.add_argument('-phi', action='store', dest='phi', 
                    type=float, default=0,
@@ -606,9 +606,9 @@ def main(cml):
         vmode = None
 
     ViewPoscar(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize,
-               bgcolor=tuple(p.bgcolor),
+               bgcolor=tuple([c/255. for c in p.bgcolor]),
                vibration=vmode,
-               arrow_color=tuple(p.vcolor),
+               arrow_color=tuple([c/255. for c in p.vcolor]),
                phi=p.phi, theta=p.theta,
                quiet=p.quiet)
 

@@ -21,12 +21,12 @@ The following python library must be installed to run the script
 
 ## Examples
 
-The following line shows the possible functions of the script:
+The following line shows the possible usage of the script:
 
 1. designate the input files by `-i POSCAR`
 2. make a 2x2x1 supercell by `-r 2 2 1`
 3. set the background color to black by `-bg 0 0 0`, where `0 0 0` is the RGB
-   triplet, each with value in [0,1]
+   triplet, each with value in [0,255]
 4. save the figure `-o out.png`. The output image format is determined by the
    suffix of the output file name.
 5. show the second vibration mode with arrows `-n 2`. The OUTCAR containing the
