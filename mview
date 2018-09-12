@@ -525,7 +525,6 @@ def Mview(inf, repeat=(1,1,1),
         ijs = np.array(ijs, dtype=int)
 
         if ijs.size > 0:
-            print(A, B)
             A_color = pt_atomic_color[pt_atomic_name.index(A)]
             B_color = pt_atomic_color[pt_atomic_name.index(B)]
 
