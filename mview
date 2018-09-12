@@ -412,7 +412,7 @@ def ViewPoscar(inf, repeat=(1,1,1),
     bond_max_of_each_type = []
 
     for ii in range(ntype):
-        for jj in range(ii):
+        for jj in range(ii + 1):
             A = uniq_atom_chem_symb[ii]
             B = uniq_atom_chem_symb[jj]
 
@@ -460,31 +460,32 @@ def ViewPoscar(inf, repeat=(1,1,1),
                         ijs.append((ii, jj))
         ijs = np.array(ijs, dtype=int)
 
-        A_color = pt_atomic_color[pt_atomic_name.index(A)]
-        B_color = pt_atomic_color[pt_atomic_name.index(B)]
+        if ijs.size > 0:
+            A_color = pt_atomic_color[pt_atomic_name.index(A)]
+            B_color = pt_atomic_color[pt_atomic_name.index(B)]
 
-        p_A = poscar.positions[ijs[:,0]]
-        p_B = poscar.positions[ijs[:,1]]
-        # The coordinate of the middle point in the bond A-B
-        p_M = (p_A + p_B) / 2.
-        p_T = np.zeros((ijs.shape[0] * 2, 3))
-        p_T[1::2,:] = p_M
-        # only connect the bonds
-        bond_connectivity = np.vstack(
-            [range(0,2*ijs.shape[0],2),
-             range(1,2*ijs.shape[0],2)]
-        ).T
+            p_A = poscar.positions[ijs[:,0]]
+            p_B = poscar.positions[ijs[:,1]]
+            # The coordinate of the middle point in the bond A-B
+            p_M = (p_A + p_B) / 2.
+            p_T = np.zeros((ijs.shape[0] * 2, 3))
+            p_T[1::2,:] = p_M
+            # only connect the bonds
+            bond_connectivity = np.vstack(
+                [range(0,2*ijs.shape[0],2),
+                 range(1,2*ijs.shape[0],2)]
+            ).T
 
-        # plot the first half of the bond: A-M
-        p_T[0::2,:] = p_A
-        bond_A = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                    tube_radius=0.1, color=A_color)
-        bond_A.mlab_source.dataset.lines = bond_connectivity
-        # plot the second half of the bond: M-B
-        p_T[0::2,:] = p_B
-        bond_B = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                    tube_radius=0.1, color=B_color)
-        bond_B.mlab_source.dataset.lines = bond_connectivity
+            # plot the first half of the bond: A-M
+            p_T[0::2,:] = p_A
+            bond_A = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
+                        tube_radius=0.1, color=A_color)
+            bond_A.mlab_source.dataset.lines = bond_connectivity
+            # plot the second half of the bond: M-B
+            p_T[0::2,:] = p_B
+            bond_B = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
+                        tube_radius=0.1, color=B_color)
+            bond_B.mlab_source.dataset.lines = bond_connectivity
 
     ############################################################
     # Show the vibration mode by arrows
