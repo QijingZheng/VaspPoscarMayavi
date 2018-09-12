@@ -329,7 +329,7 @@ from ase.io import read
 
 import time
 
-def ViewPoscar(inf, repeat=(1,1,1),
+def Mview(inf, repeat=(1,1,1),
          figname='kaka.png', figsize=(800, 800),
          bgcolor=(0,0,0),
          # showBox=True,
@@ -342,6 +342,8 @@ def ViewPoscar(inf, repeat=(1,1,1),
          cell_linewidth=0.02,
          cell_linecolor=(1,1,1),
          parallel_proj=True,
+         volume_data=None,
+         volume_iso_color=(1,1,1),
         ):
     '''
     Using the mayavi to view the molecular structure.
@@ -410,6 +412,7 @@ def ViewPoscar(inf, repeat=(1,1,1),
         cell_box = mlab.plot3d(Cxyz[0], Cxyz[1], Cxyz[2],
                     tube_radius=cell_linewidth,
                     color=cell_linecolor,
+                    name='CellBox'
                 )
         cell_box.mlab_source.dataset.lines = np.array(conn)
 
@@ -429,6 +432,7 @@ def ViewPoscar(inf, repeat=(1,1,1),
         #                         [p1[2], p2[2]],
         #                         tube_radius=cell_linewidth)
 
+    # all_times.append(time.time())
     ############################################################
     # plot the atoms for each type
     ############################################################
@@ -450,7 +454,8 @@ def ViewPoscar(inf, repeat=(1,1,1),
         mlab.points3d(typePos[:,0], typePos[:,1], typePos[:,2],
                       np.ones(typeNo) * typeRad,
                       color=typeClr, resolution=60,
-                      scale_factor=1.0)
+                      scale_factor=1.0,
+                      name="AtomSphere_{}".format(typeName))
 
     # Another way to plot the atoms is to iterate over the number of atoms, which is
     # a lot slower than iterate over the number of types.
@@ -520,6 +525,7 @@ def ViewPoscar(inf, repeat=(1,1,1),
         ijs = np.array(ijs, dtype=int)
 
         if ijs.size > 0:
+            print(A, B)
             A_color = pt_atomic_color[pt_atomic_name.index(A)]
             B_color = pt_atomic_color[pt_atomic_name.index(B)]
 
@@ -538,12 +544,14 @@ def ViewPoscar(inf, repeat=(1,1,1),
             # plot the first half of the bond: A-M
             p_T[0::2,:] = p_A
             bond_A = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                        tube_radius=0.1, color=A_color)
+                        tube_radius=0.1, color=A_color,
+                        name="Bonds_{}-{}".format(A,B))
             bond_A.mlab_source.dataset.lines = bond_connectivity
             # plot the second half of the bond: M-B
             p_T[0::2,:] = p_B
             bond_B = mlab.plot3d(p_T[:,0], p_T[:,1], p_T[:,2],
-                        tube_radius=0.1, color=B_color)
+                        tube_radius=0.1, color=B_color,
+                        name="Bonds_{}-{}".format(A,B))
             bond_B.mlab_source.dataset.lines = bond_connectivity
 
     ############################################################
@@ -556,10 +564,27 @@ def ViewPoscar(inf, repeat=(1,1,1),
                     v[:,0], v[:,1], v[:,2],
                     color=arrow_color,
                     mode='arrow',
+                    name="VibrationMode",
                     # scale_factor=1.0,
                 )
         arrow.glyph.glyph_source.glyph_position = 'tail'
         # arrow.glyph.glyph_source.glyph_source = arrow.glyph.glyph_source.glyph_dict['arrow_source']  
+
+    ############################################################
+    # Show the volumetric data
+    ############################################################
+    if volume_data is not None:
+        Nx, Ny, Nz = volume_data.shape
+        Cx, Cy, Cz = np.tensordot(
+                        ucell,
+                        np.mgrid[0:1:Nx*1j, 0:1:Ny*1j, 0:1:Nz*1j],
+                        axes=(0,0))
+        vol = mlab.contour3d(
+                Cx, Cy, Cz, volume_data,
+                color=volume_iso_color,
+                transparent=True,
+                name="VolumeData",
+                )
 
     # all_times.append(time.time())
     # print(np.diff(all_times))
@@ -675,6 +700,14 @@ def main(cml):
     arg.add_argument('-vcolor', action='store', dest='vcolor', nargs=3,
                    type=int, default=(255, 255, 255),
                    help="Vibrational arrow color.")
+
+    arg.add_argument('-chgcar', action='store', dest='chgcar',  type=str,
+                   default=None,
+                   help="Location of VASP CHGCAR-like files.")
+    arg.add_argument('-isocolor', action='store', dest='volume_iso_color', nargs=3,
+                   type=int, default=(255, 255, 255),
+                   help="Color of iso-surface.")
+
     arg.add_argument('-phi', action='store', dest='phi', 
                    type=float, default=0,
                    help="Azimuth view angle.")
@@ -693,17 +726,26 @@ def main(cml):
     else:
         vmode = None
 
-    ViewPoscar(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize,
-               bgcolor=tuple([c/255. for c in p.bgcolor]),
-               vibration=vmode,
-               arrow_color=tuple([c/255. for c in p.vcolor]),
-               phi=p.phi, theta=p.theta,
-               quiet=p.quiet,
-               showcell=p.showcell,
-               singleCell=p.singleCell,
-               cell_linewidth=p.cell_linewidth,
-               cell_linecolor=tuple([c/255. for c in p.cell_linecolor]),
-               parallel_proj=p.parallel_proj)
+    chg = None
+    if p.chgcar is not None:
+        if os.path.isfile(p.chgcar):
+            from ase.calculators.vasp import VaspChargeDensity
+            chg = VaspChargeDensity(p.chgcar).chg[0]
+
+    Mview(p.inf, repeat=p.repeat, figname=p.outImg, figsize=p.outImgSize,
+          bgcolor=tuple([c/255. for c in p.bgcolor]),
+          vibration=vmode,
+          arrow_color=tuple([c/255. for c in p.vcolor]),
+          phi=p.phi, theta=p.theta,
+          quiet=p.quiet,
+          showcell=p.showcell,
+          singleCell=p.singleCell,
+          cell_linewidth=p.cell_linewidth,
+          cell_linecolor=tuple([c/255. for c in p.cell_linecolor]),
+          parallel_proj=p.parallel_proj,
+          volume_data=chg,
+          volume_iso_color=tuple([c/255. for c in p.volume_iso_color]),
+          )
 
 if __name__ == '__main__':
     import sys

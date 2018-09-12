@@ -21,7 +21,8 @@ The following python library must be installed to run the script
 
 ## Examples
 
-The following line shows the possible usage of the script:
+For a compliete list of functions, please refer to the help message by `mview
+-h`.  The following line shows the possible usage of the script:
 
 1. designate the input files by `-i POSCAR`
 2. make a 2x2x1 supercell by `-r 2 2 1`
