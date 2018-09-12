@@ -681,7 +681,7 @@ def main(cml):
                    default=True,
                    help='Parallel projection?')
     arg.add_argument('-clw', action='store', dest='cell_linewidth', 
-                   type=float, default=0.03,
+                   type=float, default=0.05,
                    help="Cell box line width.")
     arg.add_argument('-clc', action='store', dest='cell_linecolor', nargs=3,
                    type=int, default=(255, 255, 255),
