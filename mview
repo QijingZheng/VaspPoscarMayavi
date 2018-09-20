@@ -637,7 +637,7 @@ def load_vibmodes_from_outcar(inf='OUTCAR', include_imag=True):
     omegas = np.array(omegas, dtype=float)
     modes  = np.array(modes, dtype=float).reshape((-1, nions, 3))
 
-    if include_imag:
+    if not include_imag:
         omegas = omegas[real_freq]
         modes  = modes[real_freq]
 
