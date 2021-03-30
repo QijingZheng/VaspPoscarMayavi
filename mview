@@ -381,7 +381,7 @@ def Mview(inf, repeat=(1,1,1),
     atom_type_num       = [len(atom_type_integerID[k]) for k in uniq_atom_chem_symb]
 
     # initialize the figure
-    if not quiet:
+    if quiet:
         mlab.options.offscreen = True
     fig = mlab.figure(1, bgcolor=bgcolor, size=figsize)
     mlab.clf()
