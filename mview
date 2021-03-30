@@ -362,10 +362,12 @@ def Mview(inf, repeat=(1,1,1),
                              np.sqrt(poscar.get_masses())[:,np.newaxis]
         sqrt_mass_norm_vib /= np.linalg.norm(sqrt_mass_norm_vib)
         poscar.set_velocities(sqrt_mass_norm_vib)
+    # repeat is not compatible with your atoms' constraints, remove it
+    poscar.set_constraint()
     # making supercells
     poscar = poscar * repeat
 
-    nions               = poscar.get_number_of_atoms()
+    nions               = len(poscar)
     atom_chem_symb      = np.array(poscar.get_chemical_symbols())
     uniq_atom_chem_symb = list(set(atom_chem_symb))
     ntype               = len(uniq_atom_chem_symb)
@@ -379,6 +381,8 @@ def Mview(inf, repeat=(1,1,1),
     atom_type_num       = [len(atom_type_integerID[k]) for k in uniq_atom_chem_symb]
 
     # initialize the figure
+    if not quiet:
+        mlab.options.offscreen = True
     fig = mlab.figure(1, bgcolor=bgcolor, size=figsize)
     mlab.clf()
 
@@ -588,16 +592,20 @@ def Mview(inf, repeat=(1,1,1),
     # all_times.append(time.time())
     # print(np.diff(all_times))
 
-    mlab.orientation_axes()
-    mlab.view(azimuth=phi, elevation=theta)
-    mlab.savefig(figname)
-
     if parallel_proj:
         fig.scene.parallel_projection = True
     else:
         fig.scene.parallel_projection = False
+
+    mlab.orientation_axes()
+    mlab.view(azimuth=phi, elevation=theta)
+    fig.scene.render()
+    mlab.savefig(figname)
+
     if not quiet:
         mlab.show()
+
+    return
 
 def load_vibmodes_from_outcar(inf='OUTCAR', include_imag=True):
     '''
@@ -666,7 +674,7 @@ def main(cml):
                    type=str, default='kaka.jpeg',
                    help="Output image name.")
     arg.add_argument('-s', action='store', dest='outImgSize', nargs=2,
-                   type=int, default=(800, 800),
+                   type=int, default=(2000, 2000),
                    help="Output image size.")
     arg.add_argument('-bg', action='store', dest='bgcolor', nargs=3,
                    type=int, default=(0,0,0),
