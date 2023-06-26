@@ -520,7 +520,7 @@ def Mview(inf, repeat=(1,1,1),
             for ii in range(A_atom_Num):
                 for jj in range(ii):
                     if poscar.get_distance(A_atom_IDs[ii], B_atom_IDs[jj]) < L:
-                        ijs.append((A_atom_IDs[ii], B_atom_Num[jj]))
+                        ijs.append((A_atom_IDs[ii], B_atom_IDs[jj]))
         else:
             for ii in A_atom_IDs:
                 for jj in B_atom_IDs:
